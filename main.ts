@@ -111,16 +111,14 @@ await runBars({
     const spend = buyAmount(state);
     if (spend === null) return [];
 
-    // Main entry: deep dip with the fall paused.
-    if (dip >= DIP_BPS && r5 >= GATE_BPS) {
-      entryClose = c;
-      entrySeq = state.seq;
-      everTraded = true;
-      return [{ side: 'buy', symbol: SYMBOL, notional_quote_units: spend, max_slippage_bps: MAX_SLIPPAGE_BPS }];
-    }
-    // Fallback: only if this run has never traded, late in the window, on a
-    // shallower dip that has already stabilised.
-    if (!everTraded && state.seq >= FB_BAR && dip >= FB_DIP_BPS && r5 >= FB_GATE_BPS) {
+    // Entry, one decision point: the main deep dip with the fall paused, or
+    // the fallback — only if this run has never traded, late in the window,
+    // on a shallower dip that has already stabilised. One order literal,
+    // so the two paths cannot drift apart.
+    const shouldBuy =
+      (dip >= DIP_BPS && r5 >= GATE_BPS) ||
+      (!everTraded && state.seq >= FB_BAR && dip >= FB_DIP_BPS && r5 >= FB_GATE_BPS);
+    if (shouldBuy) {
       entryClose = c;
       entrySeq = state.seq;
       everTraded = true;
